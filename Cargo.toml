@@ -5,4 +5,9 @@ edition = "2021"
 
 [dependencies]
 chrono = "0.4.38"
+rayon = "1.10.0"
 serde = {version = "1.0.204", features=["derive"]}
+
+[profile.release] 
+opt-level=3
+debug = true

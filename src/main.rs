@@ -9,6 +9,10 @@ use std::time::SystemTime;
 use rust_folder_analysis::path_data::PathData;
 use std::io::{Error, ErrorKind};
 
+use rayon::prelude::*;
+use std::fs;
+use std::sync::{Arc, Mutex};
+
 use std::fs::read_dir;
 
 fn path_os_str_to_string(path_os_str: Option<&std::ffi::OsStr>) -> Option<String> {
@@ -41,7 +45,6 @@ fn construct_entry(dir_entry: &DirEntry) -> Result<PathData, Error> {
     // Getting metadata options.
     let (size, created, modified) = match path.metadata() {
         Ok(metadata) => {
-            println!("Metadata: {:?}", metadata);
             let size = Some(metadata.len());
 
             let created: Option<SystemTime> = match metadata.created() {
@@ -60,7 +63,6 @@ fn construct_entry(dir_entry: &DirEntry) -> Result<PathData, Error> {
     };
 
     let extension = path_os_str_to_string(path.extension());
-
     let is_folder = path.is_dir();
 
     Ok(PathData::new(
@@ -68,7 +70,13 @@ fn construct_entry(dir_entry: &DirEntry) -> Result<PathData, Error> {
     ))
 }
 
-fn build_index(folder_path: &Path) {
+fn build_index(
+    folder_path: &Path,
+    folder_queue: &mut Vec<PathBuf>,
+    path_results: &mut Vec<PathData>,
+) {
+    let mut index = 0;
+
     match read_dir(folder_path) {
         Ok(folder_contents) => {
             for path in folder_contents {
@@ -77,7 +85,15 @@ fn build_index(folder_path: &Path) {
                         let index_entry_result = construct_entry(&dir_entry);
 
                         if let Ok(index_entry) = index_entry_result {
-                            println!("Index entry: {:?}", index_entry);
+                            // println!("Index entry: {:?}\n", index_entry);
+
+                            let entry_path = index_entry.path.clone();
+
+                            if index_entry.is_folder {
+                                folder_queue.push(entry_path);
+                            }
+
+                            path_results.push(index_entry);
                         }
                     }
                     Err(e) => {
@@ -93,7 +109,16 @@ fn build_index(folder_path: &Path) {
 }
 
 fn main() {
-    let trial_path = Path::new(r"D:\Downloads\ai-prompt-runner");
+    let trial_path = Path::new(r"D:\Downloads\OneDrive_2024-08-05\CORE Drive");
 
-    build_index(trial_path);
+    let mut folder_queue = Vec::<PathBuf>::new();
+    let mut path_results = Vec::<PathData>::new();
+
+    loop {
+        build_index(trial_path, &mut folder_queue, &mut path_results);
+
+        if folder_queue.len() == 0 {
+            break;
+        }
+    }
 }
