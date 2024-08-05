@@ -1,22 +1,17 @@
-#![allow(unused_variables)]
-#![allow(unused)]
-
-use std::fs::{metadata, DirEntry};
-use std::io::Read;
-use std::path::{Path, PathBuf};
-use std::time::SystemTime;
-
 use env_logger::{Builder, Env};
+
+#[allow(unused)]
 use log::{error, info, warn};
+use rayon::prelude::*;
 
 use rust_folder_analysis::path_data::PathData;
-use std::io::{Error, ErrorKind};
-
-use rayon::prelude::*;
-use std::fs;
-use std::sync::{Arc, Mutex};
+use rust_folder_analysis::utils::loading_saving::{load_index, save_index};
 
 use std::fs::read_dir;
+use std::io::{Error, ErrorKind};
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+use std::time::{Instant, SystemTime};
 
 /// Converts Option<&OsStr> to Option<String>.
 /// We can't save a reference in a struct so we need to do this instead.
@@ -31,9 +26,9 @@ fn path_os_str_to_string(path_os_str: Option<&std::ffi::OsStr>) -> Option<String
     }
 }
 
-fn construct_entry(dir_entry: &DirEntry) -> Result<PathData, Error> {
-    let path = dir_entry.path();
-
+/// Takes a &Path and extracts necessary information from the current path to populate PathData.
+/// Works for both folders and files.
+fn construct_entry(path: &Path) -> Result<PathData, Error> {
     // PathBuf to save in the struct.
     let path_buf = path.to_path_buf();
 
@@ -80,27 +75,24 @@ fn construct_entry(dir_entry: &DirEntry) -> Result<PathData, Error> {
     ))
 }
 
-fn build_index(
+/// Analyzes the contents of a folder, returning nested folders as well as paths found.
+fn index_folder(
     folder_path: &Path,
     folder_queue: &mut Vec<PathBuf>,
     path_results: &mut Vec<PathData>,
 ) {
-    let mut index = 0;
-
     match read_dir(folder_path) {
         Ok(folder_contents) => {
             for path in folder_contents {
                 match path {
                     Ok(dir_entry) => {
                         // Turning everything into a struct based on the entry.
-                        let index_entry_result = construct_entry(&dir_entry);
+                        let index_entry_result = construct_entry(&dir_entry.path());
 
                         if let Ok(index_entry) = index_entry_result {
-                            let entry_path = index_entry.path.to_owned();
-
-                            // We need to save to two separate places so this clone is necessary if we have a folder.
+                            // We need to save to two separate places so this is necessary only if we have a folder.
                             if index_entry.is_folder {
-                                folder_queue.push(entry_path);
+                                folder_queue.push(index_entry.path.to_owned());
                             }
 
                             // Saving to the index reference vector.
@@ -108,23 +100,22 @@ fn build_index(
                         }
                     }
                     Err(e) => {
-                        error!("Failed to read path entry: {:?}", e);
+                        warn!("Failed to read path entry: {:?}", e);
                     }
                 }
             }
         }
         Err(e) => {
-            error!("Failed to read folder {:?}: {}.", folder_path, e)
+            warn!("Failed to read folder {:?}: {}.", folder_path, e)
         }
     }
 }
 
-fn main() {
-    Builder::from_env(Env::default().default_filter_or("info")).init();
+fn create_index(root_path: &Path) -> Vec<PathData> {
+    info!("Starting index at root {:?}", root_path);
+    let start = Instant::now();
 
-    let trial_path = Path::new(r"D:\");
-
-    let folder_queue = Arc::new(Mutex::new(vec![trial_path.to_path_buf()]));
+    let folder_queue = Arc::new(Mutex::new(vec![root_path.to_path_buf()]));
     let path_results = Arc::new(Mutex::new(Vec::<PathData>::new()));
 
     let pool = rayon::ThreadPoolBuilder::new()
@@ -132,7 +123,7 @@ fn main() {
         .build()
         .unwrap();
 
-    pool.scope(|s| {
+    pool.scope(|_| {
         loop {
             let folders = {
                 let mut queue = folder_queue.lock().unwrap();
@@ -148,7 +139,7 @@ fn main() {
                 let mut new_folders = Vec::new();
                 let mut results = Vec::new();
 
-                build_index(&folder_path, &mut new_folders, &mut results);
+                index_folder(&folder_path, &mut new_folders, &mut results);
 
                 // Safely update the shared folder_queue and path_results
                 {
@@ -163,7 +154,28 @@ fn main() {
         }
     });
 
-    let results = Arc::try_unwrap(path_results).unwrap().into_inner().unwrap();
+    let duration = start.elapsed();
+    info!("Time taken: {:.3?} seconds", duration.as_secs_f64());
 
-    info!("Results: {}", results.len());
+    Arc::try_unwrap(path_results).unwrap().into_inner().unwrap()
+}
+
+fn main() {
+    Builder::from_env(Env::default().default_filter_or("info")).init();
+
+    let root_path = Path::new(r"D:\Google Drive\Personal");
+
+    let index_path = Path::new("results/index.csv");
+
+    let path_results = if !index_path.exists() {
+        let path_results = create_index(root_path);
+        save_index(index_path, &path_results);
+        path_results
+    } else {
+        load_index(index_path)
+    };
+
+    for entry in path_results {
+        println!("{:?}", entry);
+    }
 }
