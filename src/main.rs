@@ -1,7 +1,3 @@
-// #![allow(unused_imports)]
-// #![allow(dead_code)]
-// #![allow(unused_variables)]
-
 use clap::{arg, command, Arg, ArgAction};
 use env_logger::{Builder, Env};
 
@@ -43,6 +39,12 @@ fn main() {
                 .help("Run Polars analysis code following the indexing operation.")
                 .action(ArgAction::SetTrue),
         )
+        .arg(
+            Arg::new("analysis_folder")
+                .short('r')
+                .long("analysis_folder")
+                .help("Location to save the resulting CSVs. Defaults to the executable directory."),
+        )
         .get_matches();
 
     // Folder is required, so Clap will throw an error before this already.
@@ -53,6 +55,7 @@ fn main() {
     )
     .expect("Invalid path given.");
 
+    // Deciding where to save the parquet cache for later analysis.
     let cache_path: PathBuf =
         if let Some(cache_location) = matches.get_one::<String>("cache_location") {
             PathBuf::from(
@@ -63,15 +66,25 @@ fn main() {
             current_dir().expect("Can't locate executable: cannot save cache.")
         };
 
+    let analysis_folder: PathBuf =
+        if let Some(analysis_folder) = matches.get_one::<String>("analysis_folder") {
+            PathBuf::from(
+                check_valid_folder_path(&analysis_folder)
+                    .expect("Invalid path given for resulting CSV locations."),
+            )
+        } else {
+            current_dir().expect("Can't locate executable: cannot save result CSVs.")
+        };
+
     let get_metadata = matches.get_flag("metadata");
 
-    // Running index and creating DataFrame
+    // Running index and creating DataFrame.
     let df = create_path_index(index_path, &cache_path, get_metadata);
 
     // Optional Polars analysis on the results.
     if matches.get_flag("analysis") {
         if matches.get_flag("metadata") {
-            run_analysis(df);
+            run_analysis(df, analysis_folder.as_path());
         } else {
             warn!("Analysis requires metadata flag (-m).")
         }

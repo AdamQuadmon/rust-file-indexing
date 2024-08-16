@@ -1,5 +1,9 @@
-#[allow(unused)]
+use std::path::Path;
+
 use polars::prelude::*;
+
+#[allow(unused)]
+use log::{error, info, warn};
 
 use crate::utils::file_operations::print_and_save;
 
@@ -73,20 +77,37 @@ fn largest_folders(df: &DataFrame) -> DataFrame {
         .expect("Failed to sum by parents")
 }
 
-pub fn run_analysis(df: DataFrame) {
-    println!("{:?}", df.get_column_names());
+pub fn run_analysis(df: DataFrame, analysis_folder_path: &Path) {
+    info!("{:?}", df.get_column_names());
 
     let total_folder_size: u64 = total_folder_size(&df);
 
     let top_n = 100;
 
-    println!("Total folder size: {} GB", total_folder_size);
+    info!("Total folder size: {} GB", total_folder_size);
 
-    print_and_save(&mut top_n_file_sizes(&df, top_n), "top_n_file_sizes.csv");
+    print_and_save(
+        &mut top_n_file_sizes(&df, top_n),
+        &analysis_folder_path,
+        "top_n_file_sizes.csv",
+        "Top n files by size",
+    );
     print_and_save(
         &mut file_size_per_extension(&df),
+        &analysis_folder_path,
         "file_size_per_extension.csv",
+        "File sizes per extension",
     );
-    print_and_save(&mut extension_counts(&df), "extension_counts.csv");
-    print_and_save(&mut largest_folders(&df), "largest_folders.csv");
+    print_and_save(
+        &mut extension_counts(&df),
+        &analysis_folder_path,
+        "extension_counts.csv",
+        "Extension counts",
+    );
+    print_and_save(
+        &mut largest_folders(&df),
+        &analysis_folder_path,
+        "largest_folders.csv",
+        "Folders by size",
+    );
 }

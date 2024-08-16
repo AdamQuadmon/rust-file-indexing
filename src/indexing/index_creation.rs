@@ -1,6 +1,6 @@
 #[allow(unused)]
 use log::{error, info, warn};
-use rayon::prelude::*;
+use rayon::{max_num_threads, prelude::*};
 
 use crate::path_data::PathData;
 
@@ -119,15 +119,16 @@ fn index_folder(
     }
 }
 
-pub fn create_index(root_path: &Path, get_metadata: bool) -> Vec<PathData> {
-    info!("Starting index at root {:?}", root_path);
+pub fn create_index(index_path: &Path, get_metadata: bool) -> Vec<PathData> {
+    info!("Starting indexing at {:?}", index_path);
     let start = Instant::now();
 
-    let folder_queue = Arc::new(Mutex::new(vec![root_path.to_path_buf()]));
+    let folder_queue = Arc::new(Mutex::new(vec![index_path.to_path_buf()]));
     let path_index = Arc::new(Mutex::new(Vec::<PathData>::new()));
 
+    // Just in case this is ran on a supercomputer, limiting the number of cores to 20.
     let pool = rayon::ThreadPoolBuilder::new()
-        .num_threads(20)
+        .num_threads(std::cmp::min(max_num_threads() / 2, 20))
         .build()
         .unwrap();
 

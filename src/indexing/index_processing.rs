@@ -9,8 +9,9 @@ use crate::utils::file_operations::{load_path_index_cache, save_path_index_cache
 
 pub fn create_path_index(index_path: &Path, cache_path: &Path, get_metadata: bool) -> DataFrame {
     let path_index = create_index(index_path, get_metadata);
-    save_path_index_cache(cache_path, &path_index);
-    to_polars_df(&path_index).expect("Failed to convert to Polars.")
+    let df = to_polars_df(&path_index).expect("Failed to convert to Polars.");
+    save_path_index_cache(cache_path, &df);
+    df
 }
 
 pub fn create_or_from_cache(index_path: &Path, cache_path: &Path, get_metadata: bool) -> DataFrame {
