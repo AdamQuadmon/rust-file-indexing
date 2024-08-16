@@ -9,6 +9,7 @@ use std::{
     path::Path,
 };
 
+/// Saving the parquet cache.
 pub fn save_path_index_cache(file_path: &Path, df: &DataFrame) {
     let cache_file_path = file_path.join("rust-file-index.parquet");
 
@@ -22,7 +23,8 @@ pub fn save_path_index_cache(file_path: &Path, df: &DataFrame) {
         .unwrap();
 }
 
-pub fn load_path_index_cache(file_path: &Path) -> DataFrame {
+/// Loading the cache: currently not used.
+pub fn _load_path_index_cache(file_path: &Path) -> DataFrame {
     let mut file = std::fs::File::open(file_path).expect("Failed to open file");
     ParquetReader::new(&mut file).finish().unwrap()
 }
@@ -48,6 +50,7 @@ pub fn check_valid_folder_path(path: &str) -> Result<&Path, Error> {
     Ok(path)
 }
 
+/// Printing and saving the analysis DataFrames.
 pub fn print_and_save(
     df: &mut DataFrame,
     analysis_folder_path: &Path,

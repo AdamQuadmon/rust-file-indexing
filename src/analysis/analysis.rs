@@ -77,9 +77,8 @@ fn largest_folders(df: &DataFrame) -> DataFrame {
         .expect("Failed to sum by parents")
 }
 
+/// Some simple analysis options. Fun way to explore Polars.
 pub fn run_analysis(df: DataFrame, analysis_folder_path: &Path) {
-    info!("{:?}", df.get_column_names());
-
     let total_folder_size: u64 = total_folder_size(&df);
 
     let top_n = 100;

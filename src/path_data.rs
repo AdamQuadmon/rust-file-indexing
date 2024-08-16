@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 pub mod path_data;
 
+/// Data collected per path.
+/// The optional fields are defined only for files.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PathData {
     pub path: PathBuf,

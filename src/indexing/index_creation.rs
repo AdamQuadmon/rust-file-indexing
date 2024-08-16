@@ -119,6 +119,8 @@ fn index_folder(
     }
 }
 
+/// Parallel processing code with a variable number of threads (default: max_num_threads() / 2, with a maximum of 20).
+/// Discovers folders, appends those to a shared queue, which the thread pool allocates workers to.
 pub fn create_index(index_path: &Path, get_metadata: bool) -> Vec<PathData> {
     info!("Starting indexing at {:?}", index_path);
     let start = Instant::now();
@@ -163,10 +165,13 @@ pub fn create_index(index_path: &Path, get_metadata: bool) -> Vec<PathData> {
         }
     });
 
+    // Collecting all the data
     let path_data = Arc::try_unwrap(path_index).unwrap().into_inner().unwrap();
-    let duration = start.elapsed();
 
+    // Printing some neat statistics
+    let duration = start.elapsed();
     let paths_indexed_count = path_data.len();
+
     info!(
         "Indexed {} paths. Time taken: {:.3?} seconds. ({:.0} paths/s)",
         paths_indexed_count,

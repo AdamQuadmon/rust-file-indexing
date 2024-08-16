@@ -3,6 +3,7 @@ use std::{path::PathBuf, time::SystemTime};
 use crate::path_data::PathData;
 
 impl PathData {
+    /// Creating a new DataFrame instance.
     pub fn new(
         path: PathBuf,
         parent: PathBuf,

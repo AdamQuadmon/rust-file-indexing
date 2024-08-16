@@ -22,6 +22,4 @@ Cargo.lock
 
 # Results files 
 *.csv 
-*.png 
-*.webp 
 *.parquet

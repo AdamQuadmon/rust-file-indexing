@@ -5,8 +5,9 @@ use std::time::UNIX_EPOCH;
 
 use std::path::Path;
 
-use crate::utils::file_operations::{load_path_index_cache, save_path_index_cache};
+use crate::utils::file_operations::{_load_path_index_cache, save_path_index_cache};
 
+/// Creates the path index, loads the Polars df, and saves the cache.
 pub fn create_path_index(index_path: &Path, cache_path: &Path, get_metadata: bool) -> DataFrame {
     let path_index = create_index(index_path, get_metadata);
     let df = to_polars_df(&path_index).expect("Failed to convert to Polars.");
@@ -14,14 +15,20 @@ pub fn create_path_index(index_path: &Path, cache_path: &Path, get_metadata: boo
     df
 }
 
-pub fn create_or_from_cache(index_path: &Path, cache_path: &Path, get_metadata: bool) -> DataFrame {
+/// Currently unused: can load in from cache if that exists, or create if it doesn't.
+pub fn _create_or_from_cache(
+    index_path: &Path,
+    cache_path: &Path,
+    get_metadata: bool,
+) -> DataFrame {
     if !cache_path.exists() {
         create_path_index(index_path, cache_path, get_metadata)
     } else {
-        load_path_index_cache(cache_path)
+        _load_path_index_cache(cache_path)
     }
 }
 
+/// Conversion of the vectors to a Polars DataFrame for further analysis.
 pub fn to_polars_df(path_index: &Vec<PathData>) -> Result<DataFrame, PolarsError> {
     let paths: Vec<String> = path_index
         .iter()

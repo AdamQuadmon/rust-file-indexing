@@ -66,6 +66,7 @@ fn main() {
             current_dir().expect("Can't locate executable: cannot save cache.")
         };
 
+    // Specifying analysis folder.
     let analysis_folder: PathBuf =
         if let Some(analysis_folder) = matches.get_one::<String>("analysis_folder") {
             PathBuf::from(
