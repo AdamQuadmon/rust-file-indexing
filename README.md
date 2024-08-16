@@ -1,6 +1,6 @@
 # File Indexing Tool
 
-A simple Rust-based command-line tool for recursively indexing all files and folders in a given directory. The tool by default collects metadata (this can be disabled for faster indexing), saving the results to a `parquet`-file (faster than CSV, and easily readable with Pandas). Additionally, Polars can be used to provide analysis on the folders and files found, creating a set of human-readable CSVs with folder sizes, common extensions etc. 
+A simple Rust-based command-line tool for recursively indexing all files and folders in a given directory, similar to WinDirStat or SequoiaView (but less pretty). The tool by default collects metadata (this can be disabled for faster indexing), saving the results to a `parquet`-file (faster than CSV, and easily readable with Pandas). Additionally, Polars can be used to provide analysis on the folders and files found, creating a set of human-readable CSVs with folder sizes, common extensions etc. 
 
 <img src="images/example_usage.png" width="600" alt="Example usage of the tool">
 
