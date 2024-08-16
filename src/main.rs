@@ -3,23 +3,16 @@ use std::path::Path;
 
 use rust_folder_analysis::utils::loading_saving::get_path_index_parquet;
 
+use clap::{arg, command, value_parser, ArgAction, Command};
+use std::path::PathBuf;
+
 #[allow(unused)]
 use polars::prelude::*;
 
 #[allow(unused)]
 use log::{error, info, warn};
 
-fn main() {
-    Builder::from_env(Env::default().default_filter_or("info")).init();
-
-    let root_path = Path::new(r"D:\");
-    let index_path = Path::new(r"D:\Desktop\rust-folder-analysis\results\index.parquet");
-
-    let start = std::time::Instant::now();
-    let df = get_path_index_parquet(root_path, index_path);
-    let duration = start.elapsed();
-    info!("Time taken: {:.3?} seconds", duration.as_secs_f64());
-
+fn polars_analysis(df: DataFrame) {
     println!("{:?}", df.get_column_names());
 
     const BYTES_TO_MB: u64 = 1024 * 1024;
@@ -58,4 +51,16 @@ fn main() {
     .with_separator(b',')
     .finish(&mut results)
     .expect("Failed to write df.");
+}
+
+fn main() {
+    Builder::from_env(Env::default().default_filter_or("info")).init();
+
+    let root_path = Path::new(r"D:\");
+    let index_path = Path::new(r"D:\Desktop\rust-folder-analysis\results\index.parquet");
+
+    let start = std::time::Instant::now();
+    let df = get_path_index_parquet(root_path, index_path);
+    let duration = start.elapsed();
+    info!("Time taken: {:.3?} seconds", duration.as_secs_f64());
 }
