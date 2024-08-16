@@ -26,6 +26,10 @@ pub fn to_polars_df(path_index: &Vec<PathData>) -> Result<DataFrame, PolarsError
         .iter()
         .map(|d| d.path.to_string_lossy().into_owned())
         .collect();
+    let parents: Vec<String> = path_index
+        .iter()
+        .map(|d| d.parent.to_string_lossy().into_owned())
+        .collect();
     let names: Vec<String> = path_index.iter().map(|d| d.name.clone()).collect();
     let stems: Vec<Option<String>> = path_index.iter().map(|d| d.stem.clone()).collect();
     let sizes: Vec<Option<u64>> = path_index.iter().map(|d| d.size).collect();
@@ -54,6 +58,7 @@ pub fn to_polars_df(path_index: &Vec<PathData>) -> Result<DataFrame, PolarsError
 
     let df = DataFrame::new(vec![
         Series::new("path", paths),
+        Series::new("parents", parents),
         Series::new("name", names),
         Series::new("stem", stems),
         Series::new("size", sizes),

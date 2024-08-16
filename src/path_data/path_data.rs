@@ -5,6 +5,7 @@ use crate::path_data::PathData;
 impl PathData {
     pub fn new(
         path: PathBuf,
+        parent: PathBuf,
         name: String,
         stem: Option<String>,
         size: Option<u64>,
@@ -15,6 +16,7 @@ impl PathData {
     ) -> Self {
         PathData {
             path,
+            parent,
             name,
             stem,
             size,

@@ -33,7 +33,14 @@ fn main() {
             Arg::new("metadata")
                 .short('m')
                 .long("metadata")
-                .help("Include metadata in the search")
+                .help("Include metadata in the search. This is slower than without metadata.")
+                .action(ArgAction::SetTrue),
+        )
+        .arg(
+            Arg::new("analysis")
+                .short('a')
+                .long("analysis")
+                .help("Run Polars analysis code following the indexing operation.")
                 .action(ArgAction::SetTrue),
         )
         .get_matches();
@@ -58,7 +65,15 @@ fn main() {
 
     let get_metadata = matches.get_flag("metadata");
 
+    // Running index and creating DataFrame
     let df = create_path_index(index_path, &cache_path, get_metadata);
 
-    run_analysis(df);
+    // Optional Polars analysis on the results.
+    if matches.get_flag("analysis") {
+        if matches.get_flag("metadata") {
+            run_analysis(df);
+        } else {
+            warn!("Analysis requires metadata flag (-m).")
+        }
+    }
 }

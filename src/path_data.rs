@@ -7,6 +7,7 @@ pub mod path_data;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PathData {
     pub path: PathBuf,
+    pub parent: PathBuf,
     pub name: String,
     pub stem: Option<String>,
     pub size: Option<u64>,

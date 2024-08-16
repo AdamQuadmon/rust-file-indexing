@@ -29,6 +29,12 @@ fn construct_entry(path: &Path, get_metadata: bool) -> Result<PathData, Error> {
     // PathBuf to save in the struct.
     let path_buf = path.to_path_buf();
 
+    let parent = match path.parent() {
+        Some(parent) => parent,
+        None => Path::new(""),
+    }
+    .to_path_buf();
+
     // This works for both files and folders.
     // If it fails, something is really wrong, so this will return an Error.
     let name = path
@@ -72,7 +78,7 @@ fn construct_entry(path: &Path, get_metadata: bool) -> Result<PathData, Error> {
 
     // Creating a result.
     Ok(PathData::new(
-        path_buf, name, stem, size, extension, created, modified, is_folder,
+        path_buf, parent, name, stem, size, extension, created, modified, is_folder,
     ))
 }
 
@@ -161,9 +167,10 @@ pub fn create_index(root_path: &Path, get_metadata: bool) -> Vec<PathData> {
 
     let paths_indexed_count = path_data.len();
     info!(
-        "Indexed {} paths. Time taken: {:.3?} seconds",
+        "Indexed {} paths. Time taken: {:.3?} seconds. ({:.0} paths/s)",
         paths_indexed_count,
-        duration.as_secs_f64()
+        duration.as_secs_f64(),
+        (paths_indexed_count as f64 / duration.as_secs_f64())
     );
 
     path_data

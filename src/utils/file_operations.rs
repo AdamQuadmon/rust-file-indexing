@@ -6,6 +6,8 @@ use polars::prelude::*;
 use log::{error, info, warn};
 
 use std::{
+    env::current_dir,
+    fs::create_dir_all,
     io::{Error, ErrorKind},
     path::Path,
 };
@@ -46,4 +48,20 @@ pub fn check_valid_folder_path(path: &str) -> Result<&Path, Error> {
     }
 
     Ok(path)
+}
+
+pub fn print_and_save(df: &mut DataFrame, file_name: &str) {
+    println!("{:?}", df);
+
+    let executable_location = current_dir().expect("Can't locate executable: cannot save cache.");
+    let analysis_folder_path = executable_location.join(Path::new("results"));
+    let analysis_file_path = analysis_folder_path.join(Path::new(file_name));
+
+    create_dir_all(analysis_folder_path).expect("Failed to create analysis result folder.");
+
+    CsvWriter::new(&mut std::fs::File::create(analysis_file_path).expect("Failed to create file"))
+        .include_header(true)
+        .with_separator(b',')
+        .finish(df)
+        .expect("Failed to write df.");
 }
