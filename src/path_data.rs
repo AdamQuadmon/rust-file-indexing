@@ -17,4 +17,5 @@ pub struct PathData {
     pub created: Option<SystemTime>,
     pub modified: Option<SystemTime>,
     pub is_folder: bool,
+    pub hash: Option<String>,
 }

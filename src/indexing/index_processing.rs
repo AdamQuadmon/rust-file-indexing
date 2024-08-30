@@ -8,8 +8,13 @@ use std::path::Path;
 use crate::utils::file_operations::{_load_path_index_cache, save_path_index_cache};
 
 /// Creates the path index, loads the Polars df, and saves the cache.
-pub fn create_path_index(index_path: &Path, cache_path: &Path, get_metadata: bool) -> DataFrame {
-    let path_index = create_index(index_path, get_metadata);
+pub fn create_path_index(
+    index_path: &Path,
+    cache_path: &Path,
+    get_metadata: bool,
+    get_hash: bool,
+) -> DataFrame {
+    let path_index = create_index(index_path, get_metadata, get_hash);
     let df = to_polars_df(&path_index).expect("Failed to convert to Polars.");
     save_path_index_cache(cache_path, &df);
     df
@@ -20,9 +25,10 @@ pub fn _create_or_from_cache(
     index_path: &Path,
     cache_path: &Path,
     get_metadata: bool,
+    get_hash: bool,
 ) -> DataFrame {
     if !cache_path.exists() {
-        create_path_index(index_path, cache_path, get_metadata)
+        create_path_index(index_path, cache_path, get_metadata, get_hash)
     } else {
         _load_path_index_cache(cache_path)
     }
@@ -63,6 +69,7 @@ pub fn to_polars_df(path_index: &Vec<PathData>) -> Result<DataFrame, PolarsError
         })
         .collect();
     let is_folders: Vec<bool> = path_index.iter().map(|d| d.is_folder).collect();
+    let hash: Vec<Option<String>> = path_index.iter().map(|d| d.hash.clone()).collect();
 
     let df = DataFrame::new(vec![
         Series::new("path", paths),
@@ -74,6 +81,7 @@ pub fn to_polars_df(path_index: &Vec<PathData>) -> Result<DataFrame, PolarsError
         Series::new("created", created),
         Series::new("modified", modified),
         Series::new("is_folder", is_folders),
+        Series::new("hash", hash),
     ])?;
 
     Ok(df)

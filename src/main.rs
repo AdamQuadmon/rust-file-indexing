@@ -1,12 +1,15 @@
+#![allow(unused)]
+
 use clap::{arg, command, Arg, ArgAction};
 use env_logger::{Builder, Env};
 
 use rust_folder_analysis::analysis::analysis::run_analysis;
 use rust_folder_analysis::indexing::index_processing::create_path_index;
 use rust_folder_analysis::utils::file_operations::check_valid_folder_path;
+use rust_folder_analysis::utils::hashing::hash_file;
 
 use std::env::current_dir;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[allow(unused)]
 use log::{error, info, warn};
@@ -45,6 +48,13 @@ fn main() {
                 .long("analysis_folder")
                 .help("Location to save the resulting CSVs. Defaults to the executable directory."),
         )
+        .arg(
+            Arg::new("hash")
+                .short('H')
+                .long("hash")
+                .help("Calculate hashes per file")
+                .action(ArgAction::SetTrue),
+        )
         .get_matches();
 
     // Folder is required, so Clap will throw an error before this already.
@@ -78,14 +88,15 @@ fn main() {
         };
 
     let get_metadata = matches.get_flag("metadata");
+    let get_hash = matches.get_flag("hash");
 
     // Running index and creating DataFrame.
-    let df = create_path_index(index_path, &cache_path, get_metadata);
+    let df = create_path_index(index_path, &cache_path, get_metadata, get_hash);
 
     // Optional Polars analysis on the results.
     if matches.get_flag("analysis") {
         if matches.get_flag("metadata") {
-            run_analysis(df, analysis_folder.as_path());
+            run_analysis(df, analysis_folder.as_path(), get_hash);
         } else {
             warn!("Analysis requires metadata flag (-m).")
         }

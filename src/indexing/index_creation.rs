@@ -3,6 +3,7 @@ use log::{error, info, warn};
 use rayon::{max_num_threads, prelude::*};
 
 use crate::path_data::PathData;
+use crate::utils::hashing::hash_file;
 
 use std::fs::read_dir;
 use std::io::{Error, ErrorKind};
@@ -25,7 +26,7 @@ fn path_os_str_to_string(path_os_str: Option<&std::ffi::OsStr>) -> Option<String
 
 /// Takes a &Path and extracts necessary information from the current path to populate PathData.
 /// Works for both folders and files.
-fn construct_entry(path: &Path, get_metadata: bool) -> Result<PathData, Error> {
+fn construct_entry(path: &Path, get_metadata: bool, get_hash: bool) -> Result<PathData, Error> {
     // PathBuf to save in the struct.
     let path_buf = path.to_path_buf();
 
@@ -76,9 +77,19 @@ fn construct_entry(path: &Path, get_metadata: bool) -> Result<PathData, Error> {
 
     let is_folder = path.is_dir();
 
+    let hash = if get_hash && !is_folder {
+        if let Ok(hash) = hash_file(path) {
+            Some(hash)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
     // Creating a result.
     Ok(PathData::new(
-        path_buf, parent, name, stem, size, extension, created, modified, is_folder,
+        path_buf, parent, name, stem, size, extension, created, modified, is_folder, hash,
     ))
 }
 
@@ -88,6 +99,7 @@ fn index_folder(
     folder_queue: &mut Vec<PathBuf>,
     path_results: &mut Vec<PathData>,
     get_metadata: bool,
+    get_hash: bool,
 ) {
     match read_dir(folder_path) {
         Ok(folder_contents) => {
@@ -95,7 +107,8 @@ fn index_folder(
                 match path {
                     Ok(dir_entry) => {
                         // Turning everything into a struct based on the entry.
-                        let index_entry_result = construct_entry(&dir_entry.path(), get_metadata);
+                        let index_entry_result =
+                            construct_entry(&dir_entry.path(), get_metadata, get_hash);
 
                         if let Ok(index_entry) = index_entry_result {
                             // We need to save to two separate places so this is necessary only if we have a folder.
@@ -121,7 +134,7 @@ fn index_folder(
 
 /// Parallel processing code with a variable number of threads (default: max_num_threads() / 2, with a maximum of 20).
 /// Discovers folders, appends those to a shared queue, which the thread pool allocates workers to.
-pub fn create_index(index_path: &Path, get_metadata: bool) -> Vec<PathData> {
+pub fn create_index(index_path: &Path, get_metadata: bool, get_hash: bool) -> Vec<PathData> {
     info!("Starting indexing at {:?}", index_path);
     let start = Instant::now();
 
@@ -150,7 +163,13 @@ pub fn create_index(index_path: &Path, get_metadata: bool) -> Vec<PathData> {
                 let mut new_folders = Vec::new();
                 let mut results = Vec::new();
 
-                index_folder(&folder_path, &mut new_folders, &mut results, get_metadata);
+                index_folder(
+                    &folder_path,
+                    &mut new_folders,
+                    &mut results,
+                    get_metadata,
+                    get_hash,
+                );
 
                 // Safely update the shared folder_queue and path_results
                 {

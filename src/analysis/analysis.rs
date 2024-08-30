@@ -5,7 +5,7 @@ use polars::prelude::*;
 #[allow(unused)]
 use log::{error, info, warn};
 
-use crate::utils::file_operations::print_and_save;
+use crate::utils::{file_operations::print_and_save, hashing::hash_iterable};
 
 const BYTES_TO_MB: u64 = 1024 * 1024;
 const BYTES_TO_GB: u64 = 1024 * 1024 * 1024;
@@ -77,8 +77,23 @@ fn largest_folders(df: &DataFrame) -> DataFrame {
         .expect("Failed to sum by parents")
 }
 
+fn overall_hash(df: &DataFrame) -> String {
+    let hash_column = df
+        .column("hash")
+        .expect("Failed to extract hash column")
+        .str()
+        .expect("Failed to convert to str");
+
+    let hash_vector: Vec<&str> = hash_column.into_no_null_iter().collect();
+
+    let overall_hash = hash_iterable(hash_vector);
+    println!("File hash: {}", overall_hash);
+
+    overall_hash
+}
+
 /// Some simple analysis options. Fun way to explore Polars.
-pub fn run_analysis(df: DataFrame, analysis_folder_path: &Path) {
+pub fn run_analysis(df: DataFrame, analysis_folder_path: &Path, get_hash: bool) {
     let total_folder_size: u64 = total_folder_size(&df);
 
     let top_n = 100;
@@ -109,4 +124,8 @@ pub fn run_analysis(df: DataFrame, analysis_folder_path: &Path) {
         "largest_folders.csv",
         "Folders by size",
     );
+
+    if get_hash {
+        overall_hash(&df);
+    }
 }

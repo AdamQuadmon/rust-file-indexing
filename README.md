@@ -13,6 +13,7 @@ The main idea is to be very fast. The code uses parallel processing with a threa
 1. **Indexing**: Recursively index all files in a specified directory.
 2. **Caching**: Saving the index data to a Parquet file for later use.
 3. **Metadata**: Option to include file metadata in the index, such as size, creation date, etc. 
+4. **File hashing**: computes a SHA256 hash per file, saving that to the cache, and computes the overall hash for the entire folder. 
 4. **Post-Indexing Analysis**: After indexing, run a Polars-based analysis on the data and save the results as CSV files.
     - Top-100 files by size. 
     - Total file size per extension. 
@@ -51,6 +52,13 @@ Simply clone the repo and run ```cargo build --release```. This will generate th
   **Usage**:  
   ```bash
   cargo run -- /path/to/folder -a
+  ```
+
+- **`-H, --hash`**:  
+  **Description**: Calculates hashes for each individual file. This can be _slow_: it has to read through every single file. It uses a buffered method so memory usage is still low, however. Requires analysis and metadata options.  
+  **Usage**:  
+  ```bash
+  cargo run -- /path/to/folder -a -m -H
   ```
 
 - **`-r, --analysis_folder`**:  

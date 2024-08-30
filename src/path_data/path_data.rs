@@ -14,6 +14,7 @@ impl PathData {
         created: Option<SystemTime>,
         modified: Option<SystemTime>,
         is_folder: bool,
+        hash: Option<String>,
     ) -> Self {
         PathData {
             path,
@@ -25,6 +26,7 @@ impl PathData {
             created,
             modified,
             is_folder,
+            hash,
         }
     }
 }
